@@ -33,7 +33,7 @@ class Solver:
         # Get number of pairs of queens in the same row
         for x in state:
             if state.count(x) > 1:
-               h += nCr(state.count(x), 2) # Add number of pairs
+               h += self.nCr(state.count(x), 2) # Add number of pairs
                
         # Get number of pairs of queens on diagonals
         total = 0
@@ -53,10 +53,11 @@ class Solver:
         """Orders states list by number of pairs of attacking queens"""
         rank = []
         for state in states:
-            rank.append(tuple((state, calcPairs(state))))
+            rank.append(tuple((state, self.calcPairs(state))))
+        rank.sort(key=lambda x: x[1])
         
-        rank = [x for x in rank.sort(key=lambda x: x[1]) for y in rank]
-        print(rank)
+        sorted_states = [x[0] for x in rank]  # Get states in sorted order
+        return sorted_states
                     
     def genetic(self):
         states = []
@@ -65,7 +66,7 @@ class Solver:
             states.append(self.generateState())
                 
         while not self.checkValid(states)[0]:
-            fitness(states)
+            states = self.fitness(states)
             # Selection
             # Crossover
             # Mutation
@@ -73,12 +74,8 @@ class Solver:
         goal_state = states[self.checkValid(states)[1]]
             
         return goal_state
-            
-            
-# 2=1 x1 x2
-# 3=3C23 x1 x2  x1 x3  x2 x3
-# 4=4C2=6  x1 x2  x1 x3  x2 x3  x1 x4  x2 x4  x3 x4
-            
+
+
 if __name__ == "__main__":
     solver = Solver(8)
     solver.genetic()
