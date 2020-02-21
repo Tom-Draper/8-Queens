@@ -3,10 +3,17 @@ import random
 
 class Solver:
     
-    def __init__(self, board_size, state_split=0.5, mutation_chance=0.1):
+    def __init__(self, board_size, no_of_states=4, state_split=0.5, mutation_chance=0.1):
         self.board_size = board_size
-        # The proportion of the fitter state used when merging two states
+        
+        self.no_of_states = no_of_states
+        # If odd, reset to default
+        if self.no_of_states % 2 == 1:
+            self.no_of_states = 4
+            
+        # The proportion of the state that is fitter used when merging two states
         self.state_split = state_split
+        self.mutation_chance = mutation_chance
         
     def generateState(self):
         state = []
@@ -28,6 +35,7 @@ class Solver:
     
     def nCr(self, n, r):
         return int(factorial(n) / factorial(r) / factorial(n-r))
+    
     
     def calcPairs(self, state):
         """Calculate number of pairs of attacking queens"""
@@ -82,17 +90,18 @@ class Solver:
     def mutate(self, state):
         """Attempts to mutate each value in the state at the mutation_chance 
         class variable"""
+         
                     
     def genetic(self):
         states = []
-        
         for i in range(4):
             states.append(self.generateState())
-                
+        
+        # Loop while not found solution
         while not self.checkValid(states)[0]:
-            states = self.fitness(states)
-            states = self.crossover(states)
-            # Mutation
+            states = self.fitness(states)  # Sort states by fitness
+            states = self.crossover(states)  # Swap state halves
+            states = self.mutate(states)  # Mutate handful of state values
             
         goal_state = states[self.checkValid(states)[1]]
             
@@ -100,5 +109,5 @@ class Solver:
 
 
 if __name__ == "__main__":
-    solver = Solver(8, 0.5)
+    solver = Solver(8)
     solver.genetic()
