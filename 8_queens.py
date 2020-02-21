@@ -1,5 +1,6 @@
 from math import factorial
 import random
+import pprint
 
 class Solver:
     
@@ -27,11 +28,17 @@ class Solver:
                 return False
         return len(state) != self.board_size
     
-    def checkValid(self, states):
+    def checkValidStates(self, states):
         for idx in range(len(states)):
-            if self.checkValidState(states[idx]):
+            if not self.checkValidState(states[idx]):
+                return False
+        return True
+    
+    def checkFound(self, states):
+        for idx in range(len(states)):
+            if calcPairs() == 0:
                 return tuple((True, idx))
-        return tuple((False, -1))
+        return tuple((False, None))
     
     def nCr(self, n, r):
         return int(factorial(n) / factorial(r) / factorial(n-r))
@@ -65,7 +72,9 @@ class Solver:
         for state in states:
             rank.append(tuple((state, self.calcPairs(state))))
         rank.sort(key=lambda x: x[1])
-        
+        pp = pprint.PrettyPrinter()
+        pp.pprint(rank)
+        print()
         sorted_states = [x[0] for x in rank]  # Get states in sorted order
         return sorted_states
     
@@ -82,28 +91,49 @@ class Solver:
         # state2 = state2FirstHalf + state1SecondHalf
         # Size of first "half" determined by the state_split class variable
         for i in range(0, len(states), 2):
-            state1 = states[i][:]
-            state2 = states[i+1][:]
-            state[i] = self.merge(state1, state2)
-            state[i+1] = self.merge(state2, state1)
+            if i+2 == len(states):  # If reached last two states
+                # Take previous state instead of next one
+                # Removes the worst performing state from mixing further
+                state1 = states[i-1][:]
+                state2 = states[i][:]
+                states[i] = self.merge(state1, state2)
+                states[i+1] = self.merge(state2, state1)
+            else:
+                state1 = states[i][:]
+                state2 = states[i+1][:]
+                states[i] = self.merge(state1, state2)
+                states[i+1] = self.merge(state2, state1)
+        return states
             
     def mutate(self, state):
         """Attempts to mutate each value in the state at the mutation_chance 
         class variable"""
-         
+        for idx in range(len(state)):
+            rand = random.random()
+            if rand < self.mutation_chance:
+                # Generate new random value at this index
+                state[idx] = random.randint(0, self.board_size)
+    
+    def mutateStates(self, states):
+        for state in states:
+            self.mutate(state)
+        return states
+            
                     
     def genetic(self):
+        found = False
         states = []
         for i in range(4):
             states.append(self.generateState())
         
         # Loop while not found solution
-        while not self.checkValid(states)[0]:
-            states = self.fitness(states)  # Sort states by fitness
-            states = self.crossover(states)  # Swap state halves
-            states = self.mutate(states)  # Mutate handful of state values
+        while found := self.checkFound(states)[0] != False:
+            if self.checkValidStates(states):
+                states = self.fitness(states)  # Sort states by fitness
+                states = self.crossover(states)  # Swap state halves
+                states = self.mutateStates(states)  # Mutate handful of state values
             
-        goal_state = states[self.checkValid(states)[1]]
+        goal_state = states[found[1]]
             
         return goal_state
 
