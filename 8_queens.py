@@ -9,13 +9,20 @@ class Solver:
     def generateState(self):
         state = []
         for i in range(self.board_size):
-            state.append(random.nextInt(self.board_size))
+            state.append(random.randint(0, self.board_size))
+        return state
         
     def checkValidState(self, state):
         for x in state:
-            if x < 0 or x >= board_size:
+            if x < 0 or x >= self.board_size:
                 return False
         return len(state) != self.board_size
+    
+    def checkValid(self, states):
+        for idx in range(len(states)):
+            if self.checkValidState(states[idx]):
+                return tuple((True, idx))
+        return tuple((False, -1))
     
     def nCr(self, n, r):
         return int(factorial(n) / factorial(r) / factorial(n-r))
@@ -39,13 +46,33 @@ class Solver:
                     # of their values, they are on the same diagonal line
                     if i - j == x - y:
                         total += 1
-        total = total / 2  # Half to get all unique pairs
-        h += total 
+        h += total / 2  # Half total to remove pairs from symmetry
+        return h
+        
+    def fitness(self, states):
+        """Orders states list by number of pairs of attacking queens"""
+        rank = []
+        for state in states:
+            rank.append(tuple((state, calcPairs(state))))
+        
+        rank = [x for x in rank.sort(key=lambda x: x[1]) for y in rank]
+        print(rank)
                     
-    def genetic(self, state):
-        while not checkValidState(state):
-            pass
-        return state
+    def genetic(self):
+        states = []
+        
+        for i in range(4):
+            states.append(self.generateState())
+                
+        while not self.checkValid(states)[0]:
+            fitness(states)
+            # Selection
+            # Crossover
+            # Mutation
+            
+        goal_state = states[self.checkValid(states)[1]]
+            
+        return goal_state
             
             
 # 2=1 x1 x2
@@ -54,8 +81,4 @@ class Solver:
             
 if __name__ == "__main__":
     solver = Solver(8)
-    state = solver.genState()
-    print(state)
-    solver.genetic(state)
-    
-    print(solver.nCr(3, 2))
+    solver.genetic()
