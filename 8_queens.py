@@ -3,8 +3,10 @@ import random
 
 class Solver:
     
-    def __init__(self, board_size):
+    def __init__(self, board_size, state_split=0.5, mutation_chance=0.1):
         self.board_size = board_size
+        # The proportion of the fitter state used when merging two states
+        self.state_split = state_split
         
     def generateState(self):
         state = []
@@ -58,6 +60,28 @@ class Solver:
         
         sorted_states = [x[0] for x in rank]  # Get states in sorted order
         return sorted_states
+    
+    def merge(self, state1, state2):
+        """Merges first half of state 1 and second half of state 2 to create a 
+        new state. The size of a half is determined by state_split."""
+        first_half_size = round(len(state1) * self.state_split)
+        new_state = state1[:first_half_size] + state2[first_half_size:]
+        return new_state
+    
+    def crossover(self, states):
+        """Loops through pairs of states and merge them to create two new states."""
+        # state1 = state1FirstHalf + state2SecondHalf
+        # state2 = state2FirstHalf + state1SecondHalf
+        # Size of first "half" determined by the state_split class variable
+        for i in range(0, len(states), 2):
+            state1 = states[i][:]
+            state2 = states[i+1][:]
+            state[i] = self.merge(state1, state2)
+            state[i+1] = self.merge(state2, state1)
+            
+    def mutate(self, state):
+        """Attempts to mutate each value in the state at the mutation_chance 
+        class variable"""
                     
     def genetic(self):
         states = []
@@ -67,8 +91,7 @@ class Solver:
                 
         while not self.checkValid(states)[0]:
             states = self.fitness(states)
-            # Selection
-            # Crossover
+            states = self.crossover(states)
             # Mutation
             
         goal_state = states[self.checkValid(states)[1]]
@@ -77,5 +100,5 @@ class Solver:
 
 
 if __name__ == "__main__":
-    solver = Solver(8)
+    solver = Solver(8, 0.5)
     solver.genetic()
