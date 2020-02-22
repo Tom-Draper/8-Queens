@@ -1,6 +1,7 @@
 from math import factorial
 from math import ceil
 import random
+import time
 
 class Solver:
     
@@ -44,7 +45,7 @@ class Solver:
         return int(factorial(n) / factorial(r) / factorial(n-r))
     
     def printBoard(self, state):
-        print("\n" + "-" * 33)
+        print("-" * 33)
         for row in range(len(state)):
             print("|", end='')
             for idx in range(len(state)):
@@ -148,7 +149,12 @@ class Solver:
 
 
 if __name__ == "__main__":
-    solver = Solver(8)
+    solver = Solver(8, state_split=0.75, mutation_chance=0.05)
+    
+    start = time.time()
     goal_state = solver.genetic()
+    end = time.time()
+    
     print(goal_state)
     solver.printBoard(goal_state)
+    print("Time taken: %.4f seconds" % (end - start))
