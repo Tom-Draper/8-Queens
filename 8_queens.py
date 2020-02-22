@@ -1,6 +1,6 @@
 from math import factorial
+from math import ceil
 import random
-import pprint
 
 class Solver:
     
@@ -19,14 +19,14 @@ class Solver:
     def generateState(self):
         state = []
         for i in range(self.board_size):
-            state.append(random.randint(0, self.board_size))
+            state.append(random.randint(0, self.board_size - 1))
         return state
         
     def checkValidState(self, state):
         for x in state:
             if x < 0 or x >= self.board_size:
                 return False
-        return len(state) != self.board_size
+        return len(state) == self.board_size
     
     def checkValidStates(self, states):
         for idx in range(len(states)):
@@ -36,19 +36,30 @@ class Solver:
     
     def checkFound(self, states):
         for idx in range(len(states)):
-            if calcPairs() == 0:
+            if self.calcPairs(states[idx]) == 0:
                 return tuple((True, idx))
         return tuple((False, None))
     
     def nCr(self, n, r):
         return int(factorial(n) / factorial(r) / factorial(n-r))
     
+    def printBoard(self, state):
+        print("\n" + "-" * 33)
+        for row in range(len(state)):
+            print("|", end='')
+            for idx in range(len(state)):
+                if row == state[idx]:
+                    print("Q".center(3), end='|')
+                else:
+                    print(" " * 3, end='|')
+            print("\n" + "-" * 33 + "\n", end='')
+        
     
     def calcPairs(self, state):
         """Calculate number of pairs of attacking queens"""
         h = 0
         # Get number of pairs of queens in the same row
-        for x in state:
+        for x in set(state):  # Each unique value
             if state.count(x) > 1:
                h += self.nCr(state.count(x), 2) # Add number of pairs
                
@@ -61,7 +72,7 @@ class Solver:
                     y = state[j]
                     # If difference in index of two values is equal to the difference 
                     # of their values, they are on the same diagonal line
-                    if i - j == x - y:
+                    if abs(i - j) == abs(x - y):
                         total += 1
         h += total / 2  # Half total to remove pairs from symmetry
         return h
@@ -72,9 +83,7 @@ class Solver:
         for state in states:
             rank.append(tuple((state, self.calcPairs(state))))
         rank.sort(key=lambda x: x[1])
-        pp = pprint.PrettyPrinter()
-        pp.pprint(rank)
-        print()
+
         sorted_states = [x[0] for x in rank]  # Get states in sorted order
         return sorted_states
     
@@ -112,7 +121,7 @@ class Solver:
             rand = random.random()
             if rand < self.mutation_chance:
                 # Generate new random value at this index
-                state[idx] = random.randint(0, self.board_size)
+                state[idx] = random.randint(0, self.board_size - 1)
     
     def mutateStates(self, states):
         for state in states:
@@ -127,7 +136,7 @@ class Solver:
             states.append(self.generateState())
         
         # Loop while not found solution
-        while found := self.checkFound(states)[0] != False:
+        while (found := self.checkFound(states))[0] == False:
             if self.checkValidStates(states):
                 states = self.fitness(states)  # Sort states by fitness
                 states = self.crossover(states)  # Swap state halves
@@ -140,4 +149,6 @@ class Solver:
 
 if __name__ == "__main__":
     solver = Solver(8)
-    solver.genetic()
+    goal_state = solver.genetic()
+    print(goal_state)
+    solver.printBoard(goal_state)
