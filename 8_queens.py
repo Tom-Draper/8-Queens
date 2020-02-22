@@ -18,33 +18,40 @@ class Solver:
         self.mutation_chance = mutation_chance
         
     def generateState(self):
+        """Generates a new random state in the form of a list."""
         state = []
         for i in range(self.board_size):
             state.append(random.randint(0, self.board_size - 1))
         return state
         
     def checkValidState(self, state):
+        """Checks a state is compatible with the board."""
         for x in state:
             if x < 0 or x >= self.board_size:
                 return False
         return len(state) == self.board_size
     
     def checkValidStates(self, states):
+        """Checks that all state in the list of states are valid and compatible 
+        with the board."""
         for idx in range(len(states)):
             if not self.checkValidState(states[idx]):
                 return False
         return True
     
     def checkFound(self, states):
+        """Checks if each any of the states are a goal state."""
         for idx in range(len(states)):
             if self.calcPairs(states[idx]) == 0:
                 return tuple((True, idx))
         return tuple((False, None))
     
     def nCr(self, n, r):
+        """Calculates and returns the result of n choose r."""
         return int(factorial(n) / factorial(r) / factorial(n-r))
     
     def printBoard(self, state):
+        """Prints a display of the state as a board to the command line."""
         print("-" * 33)
         for row in range(len(state)):
             print("|", end='')
@@ -125,12 +132,15 @@ class Solver:
                 state[idx] = random.randint(0, self.board_size - 1)
     
     def mutateStates(self, states):
+        """Calls the mutate function on each state in the given list of states."""
         for state in states:
             self.mutate(state)
         return states
             
                     
     def genetic(self):
+        """Find a goal state (where no queen can attack another queen) using a
+        genetic algorithm."""
         found = False
         states = []
         for i in range(4):
