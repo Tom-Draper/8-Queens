@@ -64,7 +64,7 @@ class Solver:
         
     
     def calcPairs(self, state):
-        """Calculate number of pairs of attacking queens"""
+        """Calculates the number of pairs of attacking queens in the input state."""
         h = 0
         # Get number of pairs of queens in the same row
         for x in set(state):  # Each unique value
