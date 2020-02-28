@@ -3,8 +3,8 @@ from math import ceil
 import random
 import time
 
+
 class Solver:
-    
     def __init__(self, board_size, no_of_states=4, state_split=0.5, mutation_chance=0.1):
         self.board_size = board_size
         
@@ -16,7 +16,9 @@ class Solver:
         # The proportion of the state that is fitter used when merging two states
         self.state_split = state_split
         self.mutation_chance = mutation_chance
-        
+
+
+class GeneticAlgorithm(Solver):
     def generateState(self):
         """Generates a new random state in the form of a list."""
         state = []
@@ -49,19 +51,6 @@ class Solver:
     def nCr(self, n, r):
         """Calculates and returns the result of n choose r."""
         return int(factorial(n) / factorial(r) / factorial(n-r))
-    
-    def printBoard(self, state):
-        """Prints a display of the state as a board to the command line."""
-        print("-" * 33)
-        for row in range(len(state)):
-            print("|", end='')
-            for idx in range(len(state)):
-                if row == state[idx]:
-                    print("Q".center(3), end='|')
-                else:
-                    print(" " * 3, end='|')
-            print("\n" + "-" * 33 + "\n", end='')
-        
     
     def calcPairs(self, state):
         """Calculates the number of pairs of attacking queens in the input state."""
@@ -137,8 +126,7 @@ class Solver:
             self.mutate(state)
         return states
             
-                    
-    def genetic(self):
+    def start(self):
         """Find a goal state (where no queen can attack another queen) using a
         genetic algorithm."""
         found = False
@@ -158,13 +146,28 @@ class Solver:
         return goal_state
 
 
+class Display:
+    def printBoard(self, state):
+        """Prints a display of the state as a board to the command line."""
+        print("-" * 33)
+        for row in range(len(state)):
+            print("|", end='')
+            for idx in range(len(state)):
+                if row == state[idx]:
+                    print("Q".center(3), end='|')
+                else:
+                    print(" " * 3, end='|')
+            print("\n" + "-" * 33 + "\n", end='')
+
+
 if __name__ == "__main__":
-    solver = Solver(8, state_split=0.75, mutation_chance=0.05)
+    genetic = GeneticAlgorithm(8, state_split=0.75, mutation_chance=0.05)
     
     start = time.time()
-    goal_state = solver.genetic()
+    goal_state = genetic.start()
     end = time.time()
     
+    display = Display()
     print(goal_state)
-    solver.printBoard(goal_state)
+    display.printBoard(goal_state)
     print("Time taken: %.4f seconds" % (end - start))
