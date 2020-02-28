@@ -9,7 +9,7 @@ class Solver:
         self.queens = queens
 
 
-class GeneticAlgorithm(Solver):
+class Genetic(Solver):
     def __init__(self, board_size, queens=4, no_of_states=4, state_split=0.5, mutation_chance=0.1):
         Solver.__init__(self, board_size, queens)
         self.no_of_states = no_of_states
@@ -148,6 +148,21 @@ class GeneticAlgorithm(Solver):
         return goal_state
 
 
+class SimulatedAnnealing(solver):
+    def __init__(self, board_size, queens=4):
+        Solver.__init__(self, board_size, queens)
+
+
+class LocalBeam(solver):
+    def __init__(self, board_size, queens=4):
+        Solver.__init__(self, board_size, queens)
+
+
+class StochasticBeam(solver):
+    def __init__(self, board_size, queens=4):
+        Solver.__init__(self, board_size, queens)
+
+
 class Display:
     def printBoard(self, state):
         """Prints a display of the state as a board to the command line."""
@@ -163,7 +178,7 @@ class Display:
 
 
 if __name__ == "__main__":
-    genetic = GeneticAlgorithm(8, state_split=0.75, mutation_chance=0.05)
+    genetic = Genetic(8, state_split=0.75, mutation_chance=0.05)
     
     start = time.time()
     goal_state = genetic.start()
