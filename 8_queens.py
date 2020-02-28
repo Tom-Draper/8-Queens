@@ -181,7 +181,12 @@ class Genetic(Solver):
         self.mutation_chance = mutation_chance
     
     def fitness(self, states):
-        """Orders states list by number of pairs of attacking queens"""
+        """
+        Orders states list by number of pairs of attacking queens.
+        
+        Returns:
+            List of lists of integers -- list of states sorted by their fitness.
+        """
         rank = []
         for state in states:
             rank.append(tuple((state, self.calcPairs(state))))
@@ -191,17 +196,29 @@ class Genetic(Solver):
         return sorted_states
     
     def merge(self, state1, state2):
-        """Merges first half of state 1 and second half of state 2 to create a 
-        new state. The size of a half is determined by state_split."""
+        """
+        Merges first half of state 1 and second half of state 2 to create a 
+        new state. The size of a "half" is determined by state_split.
+        
+        Returns:
+            List of integers -- a new state created by merging state1 and state2.
+        """
         first_half_size = round(len(state1) * self.state_split)
         new_state = state1[:first_half_size] + state2[first_half_size:]
         return new_state
     
     def crossover(self, states):
-        """Loops through pairs of states and merge them to create two new states."""
-        # state1 = state1FirstHalf + state2SecondHalf
-        # state2 = state2FirstHalf + state1SecondHalf
-        # Size of first "half" determined by the state_split class variable
+        """
+        Loops through pairs of states and merge them to create two new states.
+        Excludes the last state in states from merging.
+        state1 = state1FirstHalf + state2SecondHalf
+        state2 = state2FirstHalf + state1SecondHalf
+        Size of first "half" determined by the state_split class variable
+        
+        Returns:
+            List of lists of integers -- list of new states created by merging 
+            pairs of states.
+        """
         for i in range(0, len(states), 2):
             if i+2 == len(states):  # If reached last two states
                 # Take previous state instead of next one
@@ -211,6 +228,7 @@ class Genetic(Solver):
                 states[i] = self.merge(state1, state2)
                 states[i+1] = self.merge(state2, state1)
             else:
+                # Merge this state with next state
                 state1 = states[i][:]
                 state2 = states[i+1][:]
                 states[i] = self.merge(state1, state2)
@@ -219,7 +237,7 @@ class Genetic(Solver):
             
     def mutate(self, state):
         """Attempts to mutate each value in the state at the mutation_chance 
-        class variable"""
+        class variable."""
         for idx in range(len(state)):
             rand = random.random()
             if rand < self.mutation_chance:
@@ -227,7 +245,12 @@ class Genetic(Solver):
                 state[idx] = random.randint(0, self.board_size - 1)
     
     def mutateStates(self, states):
-        """Calls the mutate function on each state in the given list of states."""
+        """
+        Calls the mutate function on each state in the given list of states.
+        
+        Returns:
+            List of lists of integers -- list of mutated states.
+        """
         for state in states:
             self.mutate(state)
         return states
