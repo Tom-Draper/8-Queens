@@ -5,18 +5,22 @@ import time
 
 class Solver:
     def __init__(self, board_size, queens):
+        print("Board size: {board_size}")
+        if queens > board_size:
+            print(f"Queens set to: {queens}")
+            queens = board_size
         self.board_size = board_size
         self.queens = queens
 
 
 class Genetic(Solver):
-    def __init__(self, board_size, queens=4, no_of_states=4, state_split=0.5, mutation_chance=0.1):
+    def __init__(self, board_size=8, queens=8, no_of_states=4, state_split=0.5, mutation_chance=0.1):
         Solver.__init__(self, board_size, queens)
+        
         self.no_of_states = no_of_states
         # If odd, reset to default
         if self.no_of_states % 2 == 1:
             self.no_of_states = 4
-            
         # The proportion of the state that is fitter used when merging two states
         self.state_split = state_split
         self.mutation_chance = mutation_chance
@@ -149,17 +153,17 @@ class Genetic(Solver):
 
 
 class SimulatedAnnealing(solver):
-    def __init__(self, board_size, queens=4):
+    def __init__(self, board_size=8, queens=8):
         Solver.__init__(self, board_size, queens)
 
 
 class LocalBeam(solver):
-    def __init__(self, board_size, queens=4):
+    def __init__(self, board_size=8, queens=8):
         Solver.__init__(self, board_size, queens)
 
 
 class StochasticBeam(solver):
-    def __init__(self, board_size, queens=4):
+    def __init__(self, board_size=8, queens=8):
         Solver.__init__(self, board_size, queens)
 
 
@@ -178,10 +182,14 @@ class Display:
 
 
 if __name__ == "__main__":
-    genetic = Genetic(8, state_split=0.75, mutation_chance=0.05)
+    g = Genetic(state_split=0.75, mutation_chance=0.05)
+    sa = SimulatedAnnealing()
+    lb = LocalBeam()
+    StochasticBeam()
+    
     
     start = time.time()
-    goal_state = genetic.start()
+    goal_state = g.start()
     end = time.time()
     
     display = Display()
