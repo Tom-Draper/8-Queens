@@ -109,7 +109,6 @@ class SimulatedAnnealing(Solver):
             List of lists of integers -- list of all successor states.
         """
         successors = []
-        
         # Generate all successors to the input state by moving a single piece
         for idx in state:
             for value in range(self.board_size):
@@ -117,8 +116,7 @@ class SimulatedAnnealing(Solver):
                     # Replace this index with a new value
                     successor = state[:]
                     successor[idx] = value
-                    successors.append(successor)
-                    
+                    successors.append(successor)   
         return successors
         
     def start(self):
@@ -133,7 +131,6 @@ class SimulatedAnnealing(Solver):
             List of integers -- an accepting goal state.
         """
         found = False
-        states = []
         
         state = self.generateState()
         # Get h "rating" of this state (number of pairs of attacking queens)
@@ -143,24 +140,71 @@ class SimulatedAnnealing(Solver):
         while (found := self.calcPairs(state)) != 0:
             # Get list of all successors to this state
             successors = self.generateSuccessors(state)
-            c = np.random.choice(range(len(successors)))
-            selected = successors[c]
+            choice = np.random.choice(range(len(successors)))
+            selected = successors[choice]
             
             # If selected successor improves current solution, accept move
             if (new_h := self.calcPairs(selected)) < h:
-                h = new_h
                 state = selected
+                h = new_h
             else:
                 # Still accept move p percent of the time
                 if np.random.uniform() < self.p:
                     state = selected
-                
+                    h = new_h
         return state
 
 
-class LocalBeam(Solver):
-    def __init__(self, board_size=8, queens=8):
-        Solver.__init__(self, board_size, queens)
+class LocalBeam(SimulatedAnnealing):
+    def __init__(self, k=4, board_size=8, queens=8, p=0.1):
+        SimulatedAnnealing.__init__(self, board_size, queens, p)
+        
+        print(f"{k} states")
+        self.k = k
+        
+    def start(self):
+        """
+        Finds a goal state (where no queen can attack another queen) using a
+        simulated annealing algorithm.
+        This algorithm is similar to simulated annealing but uses k current 
+        states rather than just 1.
+        This algorithm iteratively take k possible state and selects a random 
+        successor to each state. If this successor improves the current state, 
+        it is accepted as a move. If this successor worsens the current state, 
+        it is accepted with probability p.
+        
+        Returns:
+            List of integers -- an accepting goal state.
+        """
+        found = False
+        states = []
+        h = []
+        
+        for i in range(self.k):
+            states[i] = self.generateState()
+            # Get h "rating" of this state (number of pairs of attacking queens)
+            h[i] = self.calcPairs(states[i])
+        
+        # Loop while not found solution
+        while (found := self.checkFound(states))[0] != 0:
+            # Get list of all successors to this state
+            for i in states:
+                successors = self.generateSuccessors(states[i])
+                choice = np.random.choice(range(len(successors)))
+                selected = successors[choice]
+            
+                # If selected successor improves current solution, accept move
+                if (new_h := self.calcPairs(selected)) < h:
+                    states[i] = selected
+                    h[i] = new_h
+                else:
+                    # Still accept move p percent of the time
+                    if np.random.uniform() < self.p:
+                        states[i] = selected
+                        h[i] = new_h
+        
+        goal_state = states[found[1]]
+        return goal_state
 
 
 class StochasticBeam(Solver):
@@ -258,9 +302,10 @@ class Genetic(Solver):
     def start(self):
         """
         Finds a goal state (where no queen can attack another queen) using a
-        genetic algorithm. This algorithm takes an initial population of n number
-        of states, measures their fitness, orders them. The algorithm then crosses
-        over pairs of states excluding the worst performing state in the population
+        genetic algorithm.
+        This algorithm takes an initial population of n number of states, 
+        measures their fitness, orders them. The algorithm then crosses over 
+        pairs of states excluding the worst performing state in the population
         to create new states. The values in these states then are mutated 
         at a set probability.
         
