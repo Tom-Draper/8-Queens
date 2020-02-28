@@ -1,6 +1,7 @@
 from math import factorial
 from math import ceil
 import random
+import numpy as np
 import time
 
 class Solver:
@@ -89,7 +90,7 @@ class Solver:
 
 
 class SimulatedAnnealing(solver):
-    def __init__(self, board_size=8, queens=8):
+    def __init__(self, board_size=8, queens=8, p_accept_bad=0.3):
         Solver.__init__(self, board_size, queens)
         
     def generateSuccessors(self, state):
@@ -110,14 +111,26 @@ class SimulatedAnnealing(solver):
         found = False
         states = []
         
-        initial = self.generateState()
+        state = self.generateState()
+        # Get h "rating" of this state (number of pairs of attacking queens)
+        h = self.calcPairs(state)
         
         # Loop while not found solution
-        while (found := self.checkFound(states))[0] == False:
+        while (found := self.calcPairs(state)) == 0:
             # Get list of all successors to this state
-            successors = generateSuccessors
+            successors = self.generateSuccessors
+            selected = np.random.choice(successors)
             
-        return goal_state
+            # If selected successor improves current solution, accept move
+            if (new_h := self.calcPairs(selected)) < h:
+                h = new_h
+                state = selected
+            else:
+                # Still accept move p_accept_bad percent of the time
+                if np.random.uniform() < self.p_accept_bad:
+                    state = selected
+                
+        return state
 
 
 class LocalBeam(solver):
