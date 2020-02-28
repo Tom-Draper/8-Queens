@@ -3,11 +3,15 @@ from math import ceil
 import random
 import time
 
-
 class Solver:
-    def __init__(self, board_size, no_of_states=4, state_split=0.5, mutation_chance=0.1):
+    def __init__(self, board_size, queens):
         self.board_size = board_size
-        
+        self.queens = queens
+
+
+class GeneticAlgorithm(Solver):
+    def __init__(self, board_size, queens=4, no_of_states=4, state_split=0.5, mutation_chance=0.1):
+        Solver.__init__(self, board_size, queens)
         self.no_of_states = no_of_states
         # If odd, reset to default
         if self.no_of_states % 2 == 1:
@@ -16,9 +20,7 @@ class Solver:
         # The proportion of the state that is fitter used when merging two states
         self.state_split = state_split
         self.mutation_chance = mutation_chance
-
-
-class GeneticAlgorithm(Solver):
+    
     def generateState(self):
         """Generates a new random state in the form of a list."""
         state = []
