@@ -11,52 +11,45 @@ class Solver:
             queens = board_size
         self.board_size = board_size
         self.queens = queens
-
-
-class Genetic(Solver):
-    def __init__(self, board_size=8, queens=8, no_of_states=4, state_split=0.5, mutation_chance=0.1):
-        Solver.__init__(self, board_size, queens)
         
-        self.no_of_states = no_of_states
-        # If odd, reset to default
-        if self.no_of_states % 2 == 1:
-            self.no_of_states = 4
-        # The proportion of the state that is fitter used when merging two states
-        self.state_split = state_split
-        self.mutation_chance = mutation_chance
-    
     def generateState(self):
-        """Generates a new random state in the form of a list."""
+        """
+        Generates a new random board state with the queens placed.
+        
+        Returns:
+            List of integers -- index represents column number, value 
+            represents row number.
+            Example: [2, 4, 7, 4, 8, 5, 5, 2]
+        """
         state = []
         for i in range(self.board_size):
             state.append(random.randint(0, self.board_size - 1))
         return state
         
     def checkValidState(self, state):
-        """Checks a state is compatible with the board."""
+        """
+        Checks whether a state is valid with the board constraints.
+        
+        Returns:
+            Boolean -- whether a state is valid.
+        """
         for x in state:
             if x < 0 or x >= self.board_size:
                 return False
         return len(state) == self.board_size
     
     def checkValidStates(self, states):
-        """Checks that all state in the list of states are valid and compatible 
-        with the board."""
+        """
+        Checks that all state in the list of states are valid and compatible 
+        with the board.
+        
+        Returns:
+            Boolean -- whether all state in the input list are valid for the board.
+        """
         for idx in range(len(states)):
             if not self.checkValidState(states[idx]):
                 return False
         return True
-    
-    def checkFound(self, states):
-        """Checks if each any of the states are a goal state."""
-        for idx in range(len(states)):
-            if self.calcPairs(states[idx]) == 0:
-                return tuple((True, idx))
-        return tuple((False, None))
-    
-    def nCr(self, n, r):
-        """Calculates and returns the result of n choose r."""
-        return int(factorial(n) / factorial(r) / factorial(n-r))
     
     def calcPairs(self, state):
         """Calculates the number of pairs of attacking queens in the input state."""
@@ -80,6 +73,79 @@ class Genetic(Solver):
         h += total / 2  # Half total to remove pairs from symmetry
         return h
         
+    def checkFound(self, states):
+        """
+        Takes a list of states. Checks if each any of the states are a goal state.
+        
+        Returns:
+            Tuple (Boolean, Int) -- whether a state in the list is a solution 
+            and, if so, the index of that state in the list. If not found 
+            returns (False, None).
+        """
+        for idx in range(len(states)):
+            if self.calcPairs(states[idx]) == 0:
+                return tuple((True, idx))
+        return tuple((False, None))
+
+
+class SimulatedAnnealing(solver):
+    def __init__(self, board_size=8, queens=8):
+        Solver.__init__(self, board_size, queens)
+        
+    def generateSuccessors(self, state):
+        successors = []
+        
+        # Generate all successors to the input state by moving a single piece
+        for idx in state:
+            for value in range(self.board_size):
+                if value != state[idx]: # Value not in this current state
+                    # Replace this index with a new value
+                    successor = state[:]
+                    successor[idx] = value
+                    successors.append(successor)
+                    
+        return successors
+        
+    def start(self):
+        found = False
+        states = []
+        
+        initial = self.generateState()
+        
+        # Loop while not found solution
+        while (found := self.checkFound(states))[0] == False:
+            # Get list of all successors to this state
+            successors = generateSuccessors
+            
+        return goal_state
+
+
+class LocalBeam(solver):
+    def __init__(self, board_size=8, queens=8):
+        Solver.__init__(self, board_size, queens)
+
+
+class StochasticBeam(solver):
+    def __init__(self, board_size=8, queens=8):
+        Solver.__init__(self, board_size, queens)
+
+
+class Genetic(Solver):
+    def __init__(self, board_size=8, queens=8, no_of_states=4, state_split=0.5, mutation_chance=0.1):
+        Solver.__init__(self, board_size, queens)
+        
+        self.no_of_states = no_of_states
+        # If odd, reset to default
+        if self.no_of_states % 2 == 1:
+            self.no_of_states = 4
+        # The proportion of the state that is fitter used when merging two states
+        self.state_split = state_split
+        self.mutation_chance = mutation_chance
+    
+    def nCr(self, n, r):
+        """Calculates and returns the result of n choose r."""
+        return int(factorial(n) / factorial(r) / factorial(n-r))
+    
     def fitness(self, states):
         """Orders states list by number of pairs of attacking queens"""
         rank = []
@@ -150,21 +216,6 @@ class Genetic(Solver):
         goal_state = states[found[1]]
             
         return goal_state
-
-
-class SimulatedAnnealing(solver):
-    def __init__(self, board_size=8, queens=8):
-        Solver.__init__(self, board_size, queens)
-
-
-class LocalBeam(solver):
-    def __init__(self, board_size=8, queens=8):
-        Solver.__init__(self, board_size, queens)
-
-
-class StochasticBeam(solver):
-    def __init__(self, board_size=8, queens=8):
-        Solver.__init__(self, board_size, queens)
 
 
 class Display:
