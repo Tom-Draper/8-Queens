@@ -6,10 +6,12 @@ import time
 
 class Solver:
     def __init__(self, board_size, queens):
-        print("Board size: {board_size}")
+        print(f"Board size: {board_size}")
         if queens > board_size:
             print(f"Queens set to: {queens}")
             queens = board_size
+        else:
+            print(f"Queens: {queens}")
         self.board_size = board_size
         self.queens = queens
         
@@ -52,6 +54,10 @@ class Solver:
                 return False
         return True
     
+    def nCr(self, n, r):
+        """Calculates and returns the result of n choose r."""
+        return int(factorial(n) / factorial(r) / factorial(n-r))
+    
     def calcPairs(self, state):
         """Calculates the number of pairs of attacking queens in the input state."""
         h = 0
@@ -89,11 +95,19 @@ class Solver:
         return tuple((False, None))
 
 
-class SimulatedAnnealing(solver):
-    def __init__(self, board_size=8, queens=8, p_accept_bad=0.3):
+class SimulatedAnnealing(Solver):
+    def __init__(self, board_size=8, queens=8, p=0.1):
         Solver.__init__(self, board_size, queens)
+        self.p = p
         
     def generateSuccessors(self, state):
+        """
+        Generate all possible successors to the current state by moving a single
+        queen.
+        
+        Returns:
+            List of lists of integers -- list of all successor states.
+        """
         successors = []
         
         # Generate all successors to the input state by moving a single piece
@@ -108,6 +122,16 @@ class SimulatedAnnealing(solver):
         return successors
         
     def start(self):
+        """
+        Finds a goal state (where no queen can attack another queen) using a
+        simulated annealing algorithm. This algorithm iteratively takes a 
+        possible state and selects a random successor to that state. If this
+        successor improves the current state, it is accepted as a move. If this
+        successor worsens the current state, it is accepted with probability p.
+        
+        Returns:
+            List of integers -- an accepting goal state.
+        """
         found = False
         states = []
         
@@ -116,29 +140,30 @@ class SimulatedAnnealing(solver):
         h = self.calcPairs(state)
         
         # Loop while not found solution
-        while (found := self.calcPairs(state)) == 0:
+        while (found := self.calcPairs(state)) != 0:
             # Get list of all successors to this state
-            successors = self.generateSuccessors
-            selected = np.random.choice(successors)
+            successors = self.generateSuccessors(state)
+            c = np.random.choice(range(len(successors)))
+            selected = successors[c]
             
             # If selected successor improves current solution, accept move
             if (new_h := self.calcPairs(selected)) < h:
                 h = new_h
                 state = selected
             else:
-                # Still accept move p_accept_bad percent of the time
-                if np.random.uniform() < self.p_accept_bad:
+                # Still accept move p percent of the time
+                if np.random.uniform() < self.p:
                     state = selected
                 
         return state
 
 
-class LocalBeam(solver):
+class LocalBeam(Solver):
     def __init__(self, board_size=8, queens=8):
         Solver.__init__(self, board_size, queens)
 
 
-class StochasticBeam(solver):
+class StochasticBeam(Solver):
     def __init__(self, board_size=8, queens=8):
         Solver.__init__(self, board_size, queens)
 
@@ -154,10 +179,6 @@ class Genetic(Solver):
         # The proportion of the state that is fitter used when merging two states
         self.state_split = state_split
         self.mutation_chance = mutation_chance
-    
-    def nCr(self, n, r):
-        """Calculates and returns the result of n choose r."""
-        return int(factorial(n) / factorial(r) / factorial(n-r))
     
     def fitness(self, states):
         """Orders states list by number of pairs of attacking queens"""
@@ -212,8 +233,17 @@ class Genetic(Solver):
         return states
             
     def start(self):
-        """Find a goal state (where no queen can attack another queen) using a
-        genetic algorithm."""
+        """
+        Finds a goal state (where no queen can attack another queen) using a
+        genetic algorithm. This algorithm takes an initial population of n number
+        of states, measures their fitness, orders them. The algorithm then crosses
+        over pairs of states excluding the worst performing state in the population
+        to create new states. The values in these states then are mutated 
+        at a set probability.
+        
+        Returns:
+            List of integers -- an accepting goal state.
+        """
         found = False
         states = []
         for i in range(4):
@@ -227,23 +257,33 @@ class Genetic(Solver):
                 states = self.mutateStates(states)  # Mutate handful of state values
             
         goal_state = states[found[1]]
-            
         return goal_state
 
 
 class Display:
     def printBoard(self, state):
         """Prints a display of the state as a board to the command line."""
-        print("-" * 33)
+        width = 49
+        print("-" * width)
         for row in range(len(state)):
             print("|", end='')
             for idx in range(len(state)):
                 if row == state[idx]:
-                    print("Q".center(3), end='|')
+                    print("Q".center(5), end='|')
                 else:
-                    print(" " * 3, end='|')
-            print("\n" + "-" * 33 + "\n", end='')
+                    print(" " * 5, end='|')
+            print("\n" + "-" * width + "\n", end='')
 
+
+def runAlgorithm(algorithm):
+    start = time.time()
+    goal_state = algorithm.start()
+    end = time.time()
+    
+    display = Display()
+    print(goal_state)
+    display.printBoard(goal_state)
+    print("Time taken: %.4f seconds\n" % (end - start))
 
 if __name__ == "__main__":
     g = Genetic(state_split=0.75, mutation_chance=0.05)
@@ -251,12 +291,8 @@ if __name__ == "__main__":
     lb = LocalBeam()
     StochasticBeam()
     
+    print("Simmulated Annealing")
+    runAlgorithm(sa)
+    print("Genetic Algorithm")
+    runAlgorithm(g)
     
-    start = time.time()
-    goal_state = g.start()
-    end = time.time()
-    
-    display = Display()
-    print(goal_state)
-    display.printBoard(goal_state)
-    print("Time taken: %.4f seconds" % (end - start))
