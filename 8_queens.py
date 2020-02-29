@@ -112,12 +112,13 @@ class Solver:
                 return tuple((True, idx))
         return tuple((False, None))
     
-    def fitness(self, states):
+    def ranking(self, states):
         """
         Orders states list by number of pairs of attacking queens.
         
         Returns:
-            List of lists of integers -- list of states sorted by their fitness.
+            List of lists of tuples (list of integers, integer) -- list of 
+            states sorted by their integer fitness.
         """
         
         rank = []
@@ -125,8 +126,7 @@ class Solver:
             rank.append(tuple((state, self.calcPairs(state))))
         rank.sort(key=lambda x: x[1])
 
-        sorted_states = [x[0] for x in rank]  # Get states in sorted order
-        return sorted_states
+        return rank
 
 
 class SuccessorAlgorithm(Solver):
@@ -304,10 +304,13 @@ class StochasticBeam(SuccessorAlgorithm):
             List of integers -- a selected state.
         """
         
-        # Sort successors by their fitness
-        sorted_successors = self.fitness(successors)
-        
-        bias_weights = [1/(x+1) for x in range(len(sorted_successors))]
+        # Rank successors by their fitness (lower rank = better fitness)
+        # Get tuple (state, rank) sorted ascending by their rank
+        ranking = self.ranking(successors)
+        sorted_successors = [x[0] for x in ranking]  # Get states in sorted order
+        # Take one over ranking as weight bias
+        bias_weights = [1/(x[1] + 1) for x in ranking]
+
         prob = np.array(bias_weights) / np.sum(bias_weights)
         choice = np.random.choice(len(prob), p=prob)
         
@@ -359,6 +362,7 @@ class Genetic(Solver):
         Returns:
             List of integers -- a new state created by merging state1 and state2.
         """
+        
         first_half_size = round(len(state1) * self.state_split)
         new_state = state1[:first_half_size] + state2[first_half_size:]
         return new_state
@@ -379,6 +383,7 @@ class Genetic(Solver):
             List of lists of integers -- list of new states created by merging 
             pairs of states.
         """
+        
         for i in range(0, len(states), 2):
             if i+2 != len(states):  # If not at last two states
                 # Merge this state with next state
@@ -395,6 +400,10 @@ class Genetic(Solver):
                 states[i] = self.merge(state1, state2)
                 states[i+1] = self.merge(state2, state1)
         return states
+    
+    def fitness(self, states):
+        rank = self.ranking(states)
+        return [x[0] for x in rank]  # Return states in sorted order
             
     def mutate(self, state):
         """Attempts to mutate each value in the state at the mutation_chance 
