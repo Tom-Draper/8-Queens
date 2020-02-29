@@ -273,7 +273,7 @@ class LocalBeam(SuccessorAlgorithm):
     it is accepted with probability p.
     """
     
-    def __init__(self, k=4, board_size=8, queens=8, p=0.3):
+    def __init__(self, k=8, board_size=8, queens=8, p=0.3):
         SuccessorAlgorithm.__init__(self, k, board_size, queens, p)
         
     def selectTop(self, successors):
@@ -306,7 +306,7 @@ class StochasticBeam(SuccessorAlgorithm):
     successor worsens the current state, it is accepted with probability p.
     """
     
-    def __init__(self, k=4, board_size=8, queens=8, p=0.3):
+    def __init__(self, k=8, board_size=8, queens=8, p=0.3):
         SuccessorAlgorithm.__init__(self, k, board_size, queens, p)
         
     def selectSuccessor(self, successors):
@@ -523,13 +523,13 @@ if __name__ == "__main__":
     sa = SimulatedAnnealing()
     runAlgorithm(sa)
     print("Local Beam Algorithm")
-    lb = LocalBeam(k=8)
+    lb = LocalBeam()
     runAlgorithm(lb)
     print("Stochastic Beam Algorithm")
-    sb = StochasticBeam(k=8)
+    sb = StochasticBeam()
     runAlgorithm(sb)
     print("Genetic Algorithm")
-    g = Genetic(state_split=0.75, mutation_chance=0.05)
+    g = Genetic()
     runAlgorithm(g)
     
     
