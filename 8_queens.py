@@ -24,6 +24,7 @@ class Solver:
             represents row number.
             Example: [2, 4, 7, 4, 8, 5, 5, 2]
         """
+        
         state = []
         for i in range(self.board_size):
             state.append(random.randint(0, self.board_size - 1))
@@ -102,15 +103,15 @@ class Solver:
         Takes a list of states. Checks if each any of the states are a goal state.
         
         Returns:
-            Tuple (Boolean, Int) -- whether a state in the list is a solution 
-            and, if so, the index of that state in the list. If not found 
-            returns (False, None).
+            Dictionary -- dictionary containing whether a state in the list of 
+            state has found a goal state and, if so, the index of that state in 
+            the states list. 
         """
         
         for idx in range(len(states)):
             if self.calcPairs(states[idx]) == 0:
-                return tuple((True, idx))
-        return tuple((False, None))
+                return dict({'Found': True, 'Idx': idx})
+        return dict({'Found': False, 'Idx': None})
     
     def ranking(self, states):
         """
@@ -179,6 +180,7 @@ class SuccessorAlgorithm(Solver):
         Returns:
             List of integers -- a selected successor state.
         """
+        
         idx = np.random.choice(range(len(successors)))
         return successors[idx]    
     
@@ -194,6 +196,7 @@ class SuccessorAlgorithm(Solver):
         Returns:
             List of integers -- an accepting goal state.
         """
+        
         found = False
         states = []
         # Stores h "rating" for a state (number of pairs of attacking queens)
@@ -206,7 +209,7 @@ class SuccessorAlgorithm(Solver):
             h.append(self.calcPairs(state))
         
         # Loop while not found solution
-        while (found := self.checkFound(states))[0] == False:
+        while (found := self.checkFound(states))['Found'] == False:
             # Get list of all successors to this state
             for i in range(len(states)):
                 successors = self.generateSuccessors(states[i])
@@ -221,7 +224,7 @@ class SuccessorAlgorithm(Solver):
                     states[i] = selected
                     h[i] = new_h
         
-        goal_state = states[found[1]]
+        goal_state = states[found['Idx']]
         return goal_state
 
 
@@ -455,13 +458,13 @@ class Genetic(Solver):
             states.append(self.generateState())
         
         # Loop while not found solution
-        while (found := self.checkFound(states))[0] == False:
+        while (found := self.checkFound(states))['Found'] == False:
             if self.checkValidStates(states):
                 states = self.fitness(states)  # Sort states by fitness
                 states = self.crossover(states)  # Swap state halves
                 states = self.mutateStates(states)  # Mutate handful of state values
             
-        goal_state = states[found[1]]
+        goal_state = states[found['Idx']]
         return goal_state
 
 
