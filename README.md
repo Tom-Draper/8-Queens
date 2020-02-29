@@ -7,7 +7,7 @@ Note: due to the nature of local beam search, it can often lead to a dead end th
 The 8-Queens puzzle is the problem of placing 8 chess queens on an 8x8 chessboard such that no queen can attack any other. There are 64C8 = 4,426,165,368 permutations of queen arrangements with 92 distinct solutions. Excluding solutions that differ by rotations, reflections, the puzzle has only 12 solutions.
 https://en.wikipedia.org/wiki/Eight_queens_puzzle
 
-### Algorithms implemented:
+#### Algorithms implemented:
 - Simulated annealing search
 - Local beam search
 - Stochastic beam search
