@@ -261,6 +261,35 @@ class SimulatedAnnealing(SuccessorAlgorithm):
         # Start the algorithm, passing in the random select function to select a
         # successor state randomly
         return super().start(self.randomSelect)
+    
+    def start_(self):
+        found = False
+        state = []
+        # Stores h "rating" for a state (number of pairs of attacking queens)
+        h = []
+        
+        for _ in range(self.k):
+            state = self.generateState()
+            # Get h "rating" of this state (number of pairs of attacking queens)
+            h = self.calcPairs(state)
+        
+        # Loop while not found solution
+        while (found := self.calcPairs(state)) != 0:
+            # Get list of all successors to the current state(s)
+            successors = self.generateSuccessors(state)
+            
+            # Select state(s) from entire collection of successor states
+            selected = self.randomSelect(successors)
+        
+            # If selected successor improves current solution, accept move
+            if (new_h := self.calcPairs(selected[0])) < h:
+                state = selected[0]
+                h = new_h
+            elif np.random.uniform() < self.p:
+                # Still accept bad move p percent of the time
+                state = selected[0]
+                h = new_h
+        return state
 
 
 class LocalBeam(SuccessorAlgorithm):
@@ -273,14 +302,14 @@ class LocalBeam(SuccessorAlgorithm):
     it is accepted with probability p.
     """
     
-    def __init__(self, k=4, board_size=8, queens=8, p=0.2):
+    def __init__(self, k=4, board_size=8, queens=8, p=0.4):
         SuccessorAlgorithm.__init__(self, k, board_size, queens, p)
         
-    def selectTop(self, successors):
+    def selectTop(self, successors, n):
         ranking = self.rank(successors)
         sorted_successors = [x[0] for x in ranking]
         # Return top k performing successor states
-        return sorted_successors[:self.k]
+        return sorted_successors[:n]
         
     def start(self):
         """
@@ -294,7 +323,78 @@ class LocalBeam(SuccessorAlgorithm):
         # Start the algorithm, passing in the selectTop function to select the
         # top successors from
         return super().start(self.selectTop)
-
+    
+    def start_(self):
+        found = False
+        states = []
+        # Stores h "rating" for a state (number of pairs of attacking queens)
+        h = []
+        
+        for _ in range(self.k):
+            state = self.generateState()
+            states.append(state)
+            # Get h "rating" of this state (number of pairs of attacking queens)
+            h.append(self.calcPairs(state))
+        
+        # Loop while not found solution
+        while (found := self.checkFound(states))['Found'] == False:
+            successors = []
+            # Get list of all successors to the current state(s)
+            for i in range(len(states)):
+                successors += self.generateSuccessors(states[i])
+            
+            # Select state(s) from entire collection of successor states
+            selected = self.selectTop(successors, self.k)
+        
+            for i in range(self.k):
+                # If selected successor improves current solution, accept move
+                if (new_h := self.calcPairs(selected[i])) < h[i]:
+                    states[i] = selected[i]
+                    h[i] = new_h
+                elif np.random.uniform() < self.p:
+                    # Still accept bad move p percent of the time
+                    states[i] = selected[i]
+                    h[i] = new_h
+        
+        goal_state = states[found['Idx']]
+        return goal_state
+    
+    
+class ReliableLocalBeam(LocalBeam):
+    def __init__(self, k=4, board_size=8, queens=8, p=0.3):
+        LocalBeam.__init__(self, k, board_size, queens, p)
+        
+    def start_(self):    
+        found = False
+        states = []
+        # Stores h "rating" for a state (number of pairs of attacking queens)
+        h = []
+        
+        for _ in range(self.k):
+            state = self.generateState()
+            states.append(state)
+            # Get h "rating" of this state (number of pairs of attacking queens)
+            h.append(self.calcPairs(state))
+        
+        # Loop while not found solution
+        while (found := self.checkFound(states))['Found'] == False:
+            # Get list of all successors to the current state(s)
+            for i in range(len(states)):
+                successors = self.generateSuccessors(states[i])
+                # Select state(s) from entire collection of successor states
+                selected = self.selectTop(successors, 1)
+        
+                # If selected successor improves current solution, accept move
+                if (new_h := self.calcPairs(selected[0])) < h[i]:
+                    states[i] = selected[0]
+                    h[i] = new_h
+                elif np.random.uniform() < self.p:
+                    # Still accept bad move p percent of the time
+                    states[i] = selected[0]
+                    h[i] = new_h
+        
+        goal_state = states[found['Idx']]
+        return goal_state
 
 class StochasticBeam(SuccessorAlgorithm):
     """
@@ -309,7 +409,7 @@ class StochasticBeam(SuccessorAlgorithm):
     def __init__(self, k=4, board_size=8, queens=8, p=0.1):
         SuccessorAlgorithm.__init__(self, k, board_size, queens, p)
         
-    def selectSuccessor(self, successors):
+    def selectSuccessors(self, successors):
         """
         Selects a successor from the list of successors with a bias towards
         fitter successors
@@ -347,6 +447,53 @@ class StochasticBeam(SuccessorAlgorithm):
         # Start the algorithm, passing in a successor seletion function biased 
         # towards the fitter options
         return super().start(self.selectSuccessor)
+    
+    def start_(self):
+        """
+        Starts the algorithm of a successor based algorithm.
+        
+        Arguments:
+            selectSuccessor {function} -- a function that selects a list of 
+            integers from a list. The function selects a successor state from a 
+            list of possible successors.
+        
+        Returns:
+            List of integers -- an accepting goal state.
+        """
+        
+        found = False
+        states = []
+        # Stores h "rating" for a state (number of pairs of attacking queens)
+        h = []
+        
+        for _ in range(self.k):
+            state = self.generateState()
+            states.append(state)
+            # Get h "rating" of this state (number of pairs of attacking queens)
+            h.append(self.calcPairs(state))
+        
+        # Loop while not found solution
+        while (found := self.checkFound(states))['Found'] == False:
+            successors = []
+            # Get list of all successors to the current state(s)
+            for i in range(len(states)):
+                successors += self.generateSuccessors(states[i])
+            
+            # Select state(s) from entire collection of successor states
+            selected = self.selectSuccessors(successors)
+        
+            for i in range(self.k):
+                # If selected successor improves current solution, accept move
+                if (new_h := self.calcPairs(selected[i])) < h[i]:
+                    states[i] = selected[i]
+                    h[i] = new_h
+                elif np.random.uniform() < self.p:
+                    # Still accept bad move p percent of the time
+                    states[i] = selected[i]
+                    h[i] = new_h
+        
+        goal_state = states[found['Idx']]
+        return goal_state
 
 
 class Genetic(Solver):
@@ -462,7 +609,7 @@ class Genetic(Solver):
             self.mutate(state)
         return states
             
-    def start(self):
+    def start_(self):
         """
         Starts the algorithm. Finds a goal state (where no queen can attack 
         another queen) using a genetic algorithm.
@@ -510,7 +657,7 @@ class Display:
 
 def runAlgorithm(algorithm):
     start = time.time()
-    goal_state = algorithm.start()
+    goal_state = algorithm.start_()
     end = time.time()
     
     display = Display()
@@ -525,6 +672,9 @@ if __name__ == "__main__":
     print("Local Beam Algorithm")
     lb = LocalBeam()
     runAlgorithm(lb)
+    print("Reliable Local Beam Algorithm")
+    rlb = ReliableLocalBeam()
+    runAlgorithm(rlb)
     print("Stochastic Beam Algorithm")
     sb = StochasticBeam()
     runAlgorithm(sb)
