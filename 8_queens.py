@@ -228,7 +228,7 @@ class StochasticBeam(LocalBeam):
     def selectSuccessor(self, successors):
         sorted_successors = self.fitness(successors)
         
-        bias_weights = [1/x for x in range(len(sorted_successors))]
+        bias_weights = [1/(x+1) for x in range(len(sorted_successors))]
         prob = np.array(bias_weights) / np.sum(bias_weights)
         choice = np.random.choice(len(prob), p=prob)
         
