@@ -147,11 +147,10 @@ class SimulatedAnnealing(Solver):
             if (new_h := self.calcPairs(selected)) < h:
                 state = selected
                 h = new_h
-            else:
-                # Still accept move p percent of the time
-                if np.random.uniform() < self.p:
-                    state = selected
-                    h = new_h
+            elif np.random.uniform() < self.p:
+                # Still accept bad move p percent of the time
+                state = selected
+                h = new_h
         return state
 
 
@@ -198,11 +197,10 @@ class LocalBeam(SimulatedAnnealing):
                 if (new_h := self.calcPairs(selected)) < h[i]:
                     states[i] = selected
                     h[i] = new_h
-                else:
-                    # Still accept move p percent of the time
-                    if np.random.uniform() < self.p:
-                        states[i] = selected
-                        h[i] = new_h
+                elif np.random.uniform() < self.p:
+                    # Still accept bad move p percent of the time
+                    states[i] = selected
+                    h[i] = new_h
         
         goal_state = states[found[1]]
         return goal_state
