@@ -352,6 +352,10 @@ class Genetic(Solver):
         # The proportion of the state that is fitter used when merging two states
         self.state_split = state_split
         self.mutation_chance = mutation_chance
+        
+        print(f"Population size: {no_of_states}")
+        print(f"Crossing split: {int(self.state_split * 100)}/{int((1 - self.state_split) * 100)}")
+        print(f"Chance of mutation: {self.mutation_chance}")
     
     def merge(self, state1, state2):
         """
