@@ -402,12 +402,23 @@ class Genetic(Solver):
         return states
     
     def fitness(self, states):
+        """
+        Sorts a list of states each by their own fitness.
+        
+        Arguments:
+            states {list of lists of integers} -- list of states to sort.
+        
+        Returns:
+            List of lists of integers -- list of states sorted by their fitness
+            from best to worst.
+        """
         rank = self.ranking(states)
         return [x[0] for x in rank]  # Return states in sorted order
             
     def mutate(self, state):
         """Attempts to mutate each value in the state at the mutation_chance 
         class variable."""
+        
         for idx in range(len(state)):
             rand = random.random()
             if rand < self.mutation_chance:
@@ -424,6 +435,7 @@ class Genetic(Solver):
         Returns:
             List of lists of integers -- list of mutated states.
         """
+        
         for state in states:
             self.mutate(state)
         return states
@@ -436,6 +448,7 @@ class Genetic(Solver):
         Returns:
             List of integers -- an accepting goal state.
         """
+        
         found = False
         states = []
         for i in range(4):
@@ -460,6 +473,7 @@ class Display:
         Arguments:
             state {list of integers} -- the state to be printed.
         """
+        
         width = 49
         print("-" * width)
         for row in range(len(state)):
