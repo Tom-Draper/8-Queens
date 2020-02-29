@@ -93,6 +93,21 @@ class Solver:
             if self.calcPairs(states[idx]) == 0:
                 return tuple((True, idx))
         return tuple((False, None))
+    
+    def fitness(self, states):
+        """
+        Orders states list by number of pairs of attacking queens.
+        
+        Returns:
+            List of lists of integers -- list of states sorted by their fitness.
+        """
+        rank = []
+        for state in states:
+            rank.append(tuple((state, self.calcPairs(state))))
+        rank.sort(key=lambda x: x[1])
+
+        sorted_states = [x[0] for x in rank]  # Get states in sorted order
+        return sorted_states
 
 
 class SimulatedAnnealing(Solver):
@@ -206,9 +221,63 @@ class LocalBeam(SimulatedAnnealing):
         return goal_state
 
 
-class StochasticBeam(Solver):
-    def __init__(self, board_size=8, queens=8):
-        Solver.__init__(self, board_size, queens)
+class StochasticBeam(LocalBeam):
+    def __init__(self, k=4, board_size=8, queens=8, p=0.1):
+        LocalBeam.__init__(self, k, board_size, queens, p)
+        
+    def selectSuccessor(self, successors):
+        sorted_successors = self.fitness(successors)
+        
+        bias_weights = [1/x for x in range(len(sorted_successors))]
+        prob = np.array(bias_weights) / np.sum(bias_weights)
+        choice = np.random.choice(len(prob), p=prob)
+        
+        successor = sorted_successors[choice]
+        
+        return successor
+    
+    def start(self):
+        """
+        Finds a goal state (where no queen can attack another queen) using a
+        simulated annealing algorithm.
+        This algorithm is similar to the local beam algorithm but has a bias
+        towards selecting a fitter successor rather than selecting one randomly. 
+        This algorithm iteratively take k possible state and selects a
+        successor to each state with a bias towards the better states. If this
+        successor improves the current state, it is accepted as a move. If this 
+        successor worsens the current state, it is accepted with probability p.
+        
+        Returns:
+            List of integers -- an accepting goal state.
+        """
+        found = False
+        states = []
+        h = []
+        
+        for _ in range(self.k):
+            state = self.generateState()
+            states.append(state)
+            # Get h "rating" of this state (number of pairs of attacking queens)
+            h.append(self.calcPairs(state))
+        
+        # Loop while not found solution
+        while (found := self.checkFound(states))[0] == False:
+            # Get list of all successors to this state
+            for i in range(len(states)):
+                successors = self.generateSuccessors(states[i])
+                selected = self.selectSuccessor(successors)
+            
+                # If selected successor improves current solution, accept move
+                if (new_h := self.calcPairs(selected)) < h[i]:
+                    states[i] = selected
+                    h[i] = new_h
+                elif np.random.uniform() < self.p:
+                    # Still accept bad move p percent of the time
+                    states[i] = selected
+                    h[i] = new_h
+        
+        goal_state = states[found[1]]
+        return goal_state
 
 
 class Genetic(Solver):
@@ -222,21 +291,6 @@ class Genetic(Solver):
         # The proportion of the state that is fitter used when merging two states
         self.state_split = state_split
         self.mutation_chance = mutation_chance
-    
-    def fitness(self, states):
-        """
-        Orders states list by number of pairs of attacking queens.
-        
-        Returns:
-            List of lists of integers -- list of states sorted by their fitness.
-        """
-        rank = []
-        for state in states:
-            rank.append(tuple((state, self.calcPairs(state))))
-        rank.sort(key=lambda x: x[1])
-
-        sorted_states = [x[0] for x in rank]  # Get states in sorted order
-        return sorted_states
     
     def merge(self, state1, state2):
         """
@@ -353,16 +407,17 @@ def runAlgorithm(algorithm):
     print("Time taken: %.4f seconds\n" % (end - start))
 
 if __name__ == "__main__":
-    g = Genetic(state_split=0.75, mutation_chance=0.05)
-    sa = SimulatedAnnealing()
-    lb = LocalBeam()
-    StochasticBeam()
-    
     print("Simmulated Annealing")
+    sa = SimulatedAnnealing()
     runAlgorithm(sa)
     print("Local Beam Algorithm")
+    lb = LocalBeam()
     runAlgorithm(lb)
+    print("Stochastic Beam Algorithm")
+    sb = StochasticBeam()
+    runAlgorithm(sb)
     print("Genetic Algorithm")
+    g = Genetic(state_split=0.75, mutation_chance=0.05)
     runAlgorithm(g)
     
     
