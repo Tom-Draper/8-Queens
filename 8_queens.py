@@ -180,21 +180,22 @@ class LocalBeam(SimulatedAnnealing):
         states = []
         h = []
         
-        for i in range(self.k):
-            states[i] = self.generateState()
+        for _ in range(self.k):
+            state = self.generateState()
+            states.append(state)
             # Get h "rating" of this state (number of pairs of attacking queens)
-            h[i] = self.calcPairs(states[i])
+            h.append(self.calcPairs(state))
         
         # Loop while not found solution
-        while (found := self.checkFound(states))[0] != 0:
+        while (found := self.checkFound(states))[0] == False:
             # Get list of all successors to this state
-            for i in states:
+            for i in range(len(states)):
                 successors = self.generateSuccessors(states[i])
                 choice = np.random.choice(range(len(successors)))
                 selected = successors[choice]
             
                 # If selected successor improves current solution, accept move
-                if (new_h := self.calcPairs(selected)) < h:
+                if (new_h := self.calcPairs(selected)) < h[i]:
                     states[i] = selected
                     h[i] = new_h
                 else:
@@ -361,6 +362,9 @@ if __name__ == "__main__":
     
     print("Simmulated Annealing")
     runAlgorithm(sa)
+    print("Local Beam Algorithm")
+    runAlgorithm(lb)
     print("Genetic Algorithm")
     runAlgorithm(g)
+    
     
