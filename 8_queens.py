@@ -113,7 +113,7 @@ class Solver:
                 return dict({'Found': True, 'Idx': idx})
         return dict({'Found': False, 'Idx': None})
     
-    def ranking(self, states):
+    def rank(self, states):
         """
         Orders states list by number of pairs of attacking queens.
         
@@ -122,12 +122,12 @@ class Solver:
             states sorted by their integer fitness.
         """
         
-        rank = []
+        ranking = []
         for state in states:
-            rank.append(tuple((state, self.calcPairs(state))))
-        rank.sort(key=lambda x: x[1])
+            ranking.append(tuple((state, self.calcPairs(state))))
+        ranking.sort(key=lambda x: x[1])
 
-        return rank
+        return ranking
 
 
 class SuccessorAlgorithm(Solver):
@@ -167,24 +167,9 @@ class SuccessorAlgorithm(Solver):
                     successor = state[:]
                     successor[idx] = value
                     successors.append(successor)   
-        return successors
+        return successors 
     
-    def randomSelect(self, successors):
-        """
-        Randomly selects a successor from a list of successors with uniform 
-        probability.
-        
-        Arguments:
-            successors {list of lists of integers} -- a list of successor states.
-        
-        Returns:
-            List of integers -- a selected successor state.
-        """
-        
-        idx = np.random.choice(range(len(successors)))
-        return successors[idx]    
-    
-    def start(self, selectSuccessor):
+    def start(self, selectSuccessors):
         """
         Starts the algorithm of a successor based algorithm.
         
@@ -210,18 +195,22 @@ class SuccessorAlgorithm(Solver):
         
         # Loop while not found solution
         while (found := self.checkFound(states))['Found'] == False:
-            # Get list of all successors to this state
+            successors = []
+            # Get list of all successors to the current state(s)
             for i in range(len(states)):
-                successors = self.generateSuccessors(states[i])
-                selected = selectSuccessor(successors)
+                successors += self.generateSuccessors(states[i])
             
+            # Select state(s) from entire collection of successor states
+            selected = selectSuccessors(successors)
+        
+            for i in range(self.k):
                 # If selected successor improves current solution, accept move
-                if (new_h := self.calcPairs(selected)) < h[i]:
-                    states[i] = selected
+                if (new_h := self.calcPairs(selected[i])) < h[i]:
+                    states[i] = selected[i]
                     h[i] = new_h
                 elif np.random.uniform() < self.p:
                     # Still accept bad move p percent of the time
-                    states[i] = selected
+                    states[i] = selected[i]
                     h[i] = new_h
         
         goal_state = states[found['Idx']]
@@ -236,10 +225,29 @@ class SimulatedAnnealing(SuccessorAlgorithm):
     accepted with probability p.
     """
     
-    def __init__(self, board_size=8, queens=8, p=0.1):
+    def __init__(self, board_size=8, queens=8, p=0.3):
         # As simulated annealing only keeps track of a single state to find a 
         # successor to, k is set to 1.
         SuccessorAlgorithm.__init__(self, 1, board_size, queens, p)
+        
+    def randomSelect(self, successors):
+        """
+        Randomly selects a successor from a list of successors with uniform 
+        probability.
+        
+        Arguments:
+            successors {list of lists of integers} -- a list of successor states.
+        
+        Returns:
+            List of integers -- a selected successor state.
+        """
+        
+        # Randomly select k number of successor states with uniform probability
+        states = []
+        for _ in range(self.k):
+            idx = (np.random.choice(range(len(successors)), replace=False))
+            states.append(successors[idx])
+        return states
     
     def start(self):
         """
@@ -265,8 +273,14 @@ class LocalBeam(SuccessorAlgorithm):
     it is accepted with probability p.
     """
     
-    def __init__(self, k=4, board_size=8, queens=8, p=0.1):
+    def __init__(self, k=4, board_size=8, queens=8, p=0.2):
         SuccessorAlgorithm.__init__(self, k, board_size, queens, p)
+        
+    def selectTop(self, successors):
+        ranking = self.rank(successors)
+        sorted_successors = [x[0] for x in ranking]
+        # Return top k performing successor states
+        return sorted_successors[:self.k]
         
     def start(self):
         """
@@ -277,9 +291,9 @@ class LocalBeam(SuccessorAlgorithm):
             List of integers -- an accepting goal state.
         """
         
-        # Start the algorithm, passing in the random select function to select a
-        # successor state randomly
-        return super().start(self.randomSelect)
+        # Start the algorithm, passing in the selectTop function to select the
+        # top successors from
+        return super().start(self.selectTop)
 
 
 class StochasticBeam(SuccessorAlgorithm):
@@ -309,16 +323,17 @@ class StochasticBeam(SuccessorAlgorithm):
         
         # Rank successors by their fitness (lower rank = better fitness)
         # Get tuple (state, rank) sorted ascending by their rank
-        ranking = self.ranking(successors)
+        ranking = self.rank(successors)
         sorted_successors = [x[0] for x in ranking]  # Get states in sorted order
         # Take one over ranking as weight bias
         bias_weights = [1/(x[1] + 1) for x in ranking]
-
         prob = np.array(bias_weights) / np.sum(bias_weights)
-        choice = np.random.choice(len(prob), p=prob)
         
-        successor = sorted_successors[choice]
-        return successor
+        states = []
+        for _ in range(self.k):
+            choice = np.random.choice(len(prob), p=prob)
+            states.append(sorted_successors[choice])
+        return states
     
     def start(self):
         """
@@ -419,8 +434,8 @@ class Genetic(Solver):
             List of lists of integers -- list of states sorted by their fitness
             from best to worst.
         """
-        rank = self.ranking(states)
-        return [x[0] for x in rank]  # Return states in sorted order
+        ranking = self.rank(states)
+        return [x[0] for x in ranking]  # Return states in sorted order
             
     def mutate(self, state):
         """Attempts to mutate each value in the state at the mutation_chance 
