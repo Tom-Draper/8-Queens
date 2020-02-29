@@ -273,7 +273,7 @@ class LocalBeam(SuccessorAlgorithm):
     it is accepted with probability p.
     """
     
-    def __init__(self, k=4, board_size=8, queens=8, p=0.2):
+    def __init__(self, k=4, board_size=8, queens=8, p=0.3):
         SuccessorAlgorithm.__init__(self, k, board_size, queens, p)
         
     def selectTop(self, successors):
@@ -306,7 +306,7 @@ class StochasticBeam(SuccessorAlgorithm):
     successor worsens the current state, it is accepted with probability p.
     """
     
-    def __init__(self, k=4, board_size=8, queens=8, p=0.1):
+    def __init__(self, k=4, board_size=8, queens=8, p=0.3):
         SuccessorAlgorithm.__init__(self, k, board_size, queens, p)
         
     def selectSuccessor(self, successors):
@@ -358,17 +358,17 @@ class Genetic(Solver):
     at a set probability.
     """
     
-    def __init__(self, board_size=8, queens=8, no_of_states=4, state_split=0.5, mutation_chance=0.1):
+    def __init__(self, population=4, board_size=8, queens=8, state_split=0.5, mutation_chance=0.1):
         Solver.__init__(self, board_size, queens)
         
-        self.no_of_states = no_of_states
-        if self.no_of_states % 2 == 1:  # If odd, reset to default
-            self.no_of_states = 4
+        self.population = population
+        if self.population % 2 == 1:  # If odd, reset to default
+            self.population = 4
         # The proportion of the state that is fitter used when merging two states
         self.state_split = state_split
         self.mutation_chance = mutation_chance
         
-        print(f"Population size: {no_of_states}")
+        print(f"Population size: {population}")
         print(f"Crossing split: {int(self.state_split * 100)}/{int((1 - self.state_split) * 100)}")
         print(f"Chance of mutation: {self.mutation_chance}")
     
@@ -406,7 +406,7 @@ class Genetic(Solver):
             pairs of states.
         """
         
-        for i in range(0, len(states), 2):
+        for i in range(0, self.population, 2):
             if i+2 != len(states):  # If not at last two states
                 # Merge this state with next state
                 state1 = states[i][:]
@@ -473,7 +473,7 @@ class Genetic(Solver):
         
         found = False
         states = []
-        for i in range(4):
+        for i in range(self.population):
             states.append(self.generateState())
         
         # Loop while not found solution
@@ -523,10 +523,10 @@ if __name__ == "__main__":
     sa = SimulatedAnnealing()
     runAlgorithm(sa)
     print("Local Beam Algorithm")
-    lb = LocalBeam()
+    lb = LocalBeam(k=8)
     runAlgorithm(lb)
     print("Stochastic Beam Algorithm")
-    sb = StochasticBeam()
+    sb = StochasticBeam(k=8)
     runAlgorithm(sb)
     print("Genetic Algorithm")
     g = Genetic(state_split=0.75, mutation_chance=0.05)
