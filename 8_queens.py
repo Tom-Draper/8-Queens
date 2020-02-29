@@ -146,7 +146,6 @@ class SimulatedAnnealing(Solver):
             List of integers -- an accepting goal state.
         """
         found = False
-        
         state = self.generateState()
         # Get h "rating" of this state (number of pairs of attacking queens)
         h = self.calcPairs(state)
@@ -169,29 +168,18 @@ class SimulatedAnnealing(Solver):
         return state
 
 
-class LocalBeam(SimulatedAnnealing):
+class KStatesAlgorithm(SimulatedAnnealing):
+    
     def __init__(self, k=4, board_size=8, queens=8, p=0.1):
         SimulatedAnnealing.__init__(self, board_size, queens, p)
         
         print(f"{k} states")
         self.k = k
-        
-    def start(self):
-        """
-        Finds a goal state (where no queen can attack another queen) using a
-        simulated annealing algorithm.
-        This algorithm is similar to simulated annealing but uses k current 
-        states rather than just 1.
-        This algorithm iteratively take k possible state and selects a random 
-        successor to each state. If this successor improves the current state, 
-        it is accepted as a move. If this successor worsens the current state, 
-        it is accepted with probability p.
-        
-        Returns:
-            List of integers -- an accepting goal state.
-        """
+    
+    def start(self, selectSuccessor):
         found = False
         states = []
+        # Stores h "rating" for a state (number of pairs of attacking queens)
         h = []
         
         for _ in range(self.k):
@@ -205,8 +193,7 @@ class LocalBeam(SimulatedAnnealing):
             # Get list of all successors to this state
             for i in range(len(states)):
                 successors = self.generateSuccessors(states[i])
-                choice = np.random.choice(range(len(successors)))
-                selected = successors[choice]
+                selected = selectSuccessor(successors)
             
                 # If selected successor improves current solution, accept move
                 if (new_h := self.calcPairs(selected)) < h[i]:
@@ -221,7 +208,48 @@ class LocalBeam(SimulatedAnnealing):
         return goal_state
 
 
-class StochasticBeam(LocalBeam):
+class LocalBeam(KStatesAlgorithm):
+    """
+    This algorithm is similar to simulated annealing but uses k current 
+    states rather than just 1.
+    This algorithm iteratively take k possible state and selects a random 
+    successor to each state. If this successor improves the current state, 
+    it is accepted as a move. If this successor worsens the current state, 
+    it is accepted with probability p.
+    """
+    
+    def __init__(self, k=4, board_size=8, queens=8, p=0.1):
+        KStatesAlgorithm.__init__(self, board_size, queens, p)
+        
+    def selectSuccessor(self, successors):
+        choice = np.random.choice(range(len(successors)))
+        return successors[choice]
+        
+    def start(self):
+        """
+        Finds a goal state (where no queen can attack another queen) using a
+        simulated annealing algorithm.
+        
+        
+        Returns:
+            List of integers -- an accepting goal state.
+        """
+        
+        # Starts the algorithm, passing in a successor selection function that
+        # selects a successor with uniform probability
+        return super().start(self.selectSuccessor)
+
+
+class StochasticBeam(KStatesAlgorithm):
+    """
+    This algorithm is similar to the local beam algorithm but has a bias
+    towards selecting a fitter successor rather than selecting one randomly. 
+    This algorithm iteratively take k possible state and selects a
+    successor to each state with a bias towards the better states. If this
+    successor improves the current state, it is accepted as a move. If this 
+    successor worsens the current state, it is accepted with probability p.
+    """
+    
     def __init__(self, k=4, board_size=8, queens=8, p=0.1):
         LocalBeam.__init__(self, k, board_size, queens, p)
         
@@ -233,54 +261,31 @@ class StochasticBeam(LocalBeam):
         choice = np.random.choice(len(prob), p=prob)
         
         successor = sorted_successors[choice]
-        
         return successor
     
     def start(self):
         """
         Finds a goal state (where no queen can attack another queen) using a
         simulated annealing algorithm.
-        This algorithm is similar to the local beam algorithm but has a bias
-        towards selecting a fitter successor rather than selecting one randomly. 
-        This algorithm iteratively take k possible state and selects a
-        successor to each state with a bias towards the better states. If this
-        successor improves the current state, it is accepted as a move. If this 
-        successor worsens the current state, it is accepted with probability p.
-        
+    
         Returns:
             List of integers -- an accepting goal state.
         """
-        found = False
-        states = []
-        h = []
         
-        for _ in range(self.k):
-            state = self.generateState()
-            states.append(state)
-            # Get h "rating" of this state (number of pairs of attacking queens)
-            h.append(self.calcPairs(state))
-        
-        # Loop while not found solution
-        while (found := self.checkFound(states))[0] == False:
-            # Get list of all successors to this state
-            for i in range(len(states)):
-                successors = self.generateSuccessors(states[i])
-                selected = self.selectSuccessor(successors)
-            
-                # If selected successor improves current solution, accept move
-                if (new_h := self.calcPairs(selected)) < h[i]:
-                    states[i] = selected
-                    h[i] = new_h
-                elif np.random.uniform() < self.p:
-                    # Still accept bad move p percent of the time
-                    states[i] = selected
-                    h[i] = new_h
-        
-        goal_state = states[found[1]]
-        return goal_state
+        # Start the algorithm, passing in a successor seletion function biased 
+        # towards the fitter options
+        return super().start(self.selectSuccessor)
 
 
 class Genetic(Solver):
+    """
+    This algorithm takes an initial population of n number of states, 
+    measures their fitness, orders them. The algorithm then crosses over 
+    pairs of states excluding the worst performing state in the population
+    to create new states. The values in these states then are mutated 
+    at a set probability.
+    """
+    
     def __init__(self, board_size=8, queens=8, no_of_states=4, state_split=0.5, mutation_chance=0.1):
         Solver.__init__(self, board_size, queens)
         
@@ -354,13 +359,8 @@ class Genetic(Solver):
             
     def start(self):
         """
-        Finds a goal state (where no queen can attack another queen) using a
-        genetic algorithm.
-        This algorithm takes an initial population of n number of states, 
-        measures their fitness, orders them. The algorithm then crosses over 
-        pairs of states excluding the worst performing state in the population
-        to create new states. The values in these states then are mutated 
-        at a set probability.
+        Starts the algorithm. Finds a goal state (where no queen can attack 
+        another queen) using a genetic algorithm.
         
         Returns:
             List of integers -- an accepting goal state.
