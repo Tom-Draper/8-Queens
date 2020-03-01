@@ -16,14 +16,7 @@ class Solver:
         self.queens = queens
         
     def generateState(self):
-        """
-        Generates a new random board state with the queens placed.
-        
-        Returns:
-            List of integers -- index represents column number, value 
-            represents row number.
-            Example: [2, 4, 7, 4, 8, 5, 5, 2]
-        """
+        # Generates a new random board state with the queens placed.
         
         state = []
         for i in range(self.board_size):
@@ -31,52 +24,28 @@ class Solver:
         return state
         
     def checkValidState(self, state):
-        """
-        Checks whether a state is valid with the board constraints.
+        # Checks whether a state is valid with the board constraints.
         
-        Arguments:
-            state {list of integers} -- the state to check if valid.
-        
-        Returns:
-            Boolean -- whether a state is valid.
-        """
         for x in state:
             if x < 0 or x >= self.board_size:
                 return False
         return len(state) == self.board_size
     
     def checkValidStates(self, states):
-        """
-        Checks that all state in the list of states are valid and compatible 
-        with the board.
+        # Checks that all state in the list of states are valid and compatible 
+        # with the board.
         
-        Arguments:
-            state {list of lists of integers} -- a list of states to check if 
-            valid.
-        
-        Returns:
-            Boolean -- whether all state in the input list are valid for the board.
-        """
         for idx in range(len(states)):
             if not self.checkValidState(states[idx]):
                 return False
         return True
     
     def nCr(self, n, r):
-        """Calculates and returns the result of n choose r (nCr)."""
+        # Calculates and returns the result of n choose r (nCr)
         return int(factorial(n) / factorial(r) / factorial(n-r))
     
     def calcPairs(self, state):
-        """
-        Calculates the number of pairs of attacking queens in the input state.
-        
-        Arguments:
-            state {list of integers} -- the state to count attacking pairs in.
-        
-        Returns:
-            Integer -- the number of pairs of attacking queens found in this 
-            state.
-        """
+        # Calculates the number of pairs of attacking queens in the input state.
         
         h = 0
         # Get number of pairs of queens in the same row
@@ -99,28 +68,16 @@ class Solver:
         return h
         
     def checkFound(self, states):
-        """
-        Takes a list of states. Checks if each any of the states are a goal state.
-        
-        Returns:
-            Dictionary -- dictionary containing whether a state in the list of 
-            state has found a goal state and, if so, the index of that state in 
-            the states list. 
-        """
-        
+        # Takes a list of states. Checks if each any of the states are a goal state.
+
+        # Returns dictionary holding whether found, and if so, its index
         for idx in range(len(states)):
             if self.calcPairs(states[idx]) == 0:
                 return dict({'Found': True, 'Idx': idx})
         return dict({'Found': False, 'Idx': None})
     
     def rank(self, states):
-        """
-        Orders states list by number of pairs of attacking queens.
-        
-        Returns:
-            List of lists of tuples (list of integers, integer) -- list of 
-            states sorted by their integer fitness.
-        """
+        # Orders states list by number of pairs of attacking queens.
         
         ranking = []
         for state in states:
@@ -131,10 +88,9 @@ class Solver:
 
 
 class SuccessorAlgorithm(Solver):
-    """
-    The parent class of algorithms that create successors for a single state 
-    to then move to. These include SimulatedAnnealing, LocalBeam and 
-    StochasticBeam algorithms.
+    """The parent class of algorithms that create successors for a single state 
+    to then move to.
+    SimulatedAnnealing, LocalBeam and StochasticBeam inherit from this.
     """
     
     def __init__(self, k, board_size, queens, p=0.1):
@@ -147,16 +103,8 @@ class SuccessorAlgorithm(Solver):
         print(f"p = {p}")
         
     def generateSuccessors(self, state):
-        """
-        Generate all possible successors to the current state by moving a single
-        queen.
-        
-        Arguments:
-            selectSuccessor {state} -- a state to generate all successors of.
-        
-        Returns:
-            List of lists of integers -- list of all successor states.
-        """
+        # Generate all possible successors to the current state by moving a single
+        # queen.
         
         successors = []
         # Generate all successors to the input state by moving a single piece
@@ -170,8 +118,7 @@ class SuccessorAlgorithm(Solver):
         return successors 
     
     def start(self, selectSuccessors):
-        """
-        Starts the algorithm of a successor based algorithm.
+        """Starts the algorithm of a successor based algorithm.
         
         Arguments:
             selectSuccessor {function} -- a function that selects a list of 
@@ -218,8 +165,7 @@ class SuccessorAlgorithm(Solver):
 
 
 class SimulatedAnnealing(SuccessorAlgorithm):
-    """
-    This algorithm iteratively takes a possible state and selects a random 
+    """This algorithm iteratively takes a possible state and selects a random 
     successor to that state. If this successor improves the current state, it is
     accepted as a move. If this successor worsens the current state, it is 
     accepted with probability p.
@@ -231,18 +177,9 @@ class SimulatedAnnealing(SuccessorAlgorithm):
         SuccessorAlgorithm.__init__(self, 1, board_size, queens, p)
         
     def randomSelect(self, successors):
-        """
-        Randomly selects a successor from a list of successors with uniform 
-        probability.
+        # Randomly selects a successor from a list of successors with uniform 
+        # probability.
         
-        Arguments:
-            successors {list of lists of integers} -- a list of successor states.
-        
-        Returns:
-            List of integers -- a selected successor state.
-        """
-        
-        # Randomly select k number of successor states with uniform probability
         states = []
         for _ in range(self.k):
             idx = (np.random.choice(range(len(successors)), replace=False))
@@ -250,8 +187,7 @@ class SimulatedAnnealing(SuccessorAlgorithm):
         return states
     
     def start(self):
-        """
-        Finds a goal state (where no queen can attack another queen) using a
+        """Finds a goal state (where no queen can attack another queen) using a
         simulated annealing algorithm. 
         
         Returns:
@@ -264,8 +200,7 @@ class SimulatedAnnealing(SuccessorAlgorithm):
 
 
 class LocalBeam(SuccessorAlgorithm):
-    """
-    This algorithm is similar to simulated annealing but uses k current 
+    """This algorithm is similar to simulated annealing but uses k current 
     states rather than just 1.
     The algorithm iteratively takes k possible state and selects a random 
     successor to each state. If this successor improves the current state, 
@@ -283,8 +218,7 @@ class LocalBeam(SuccessorAlgorithm):
         return sorted_successors[:self.k]
         
     def start(self):
-        """
-        Finds a goal state (where no queen can attack another queen) using a
+        """Finds a goal state (where no queen can attack another queen) using a
         simulated annealing algorithm.
         
         Returns:
@@ -297,8 +231,7 @@ class LocalBeam(SuccessorAlgorithm):
 
 
 class StochasticBeam(SuccessorAlgorithm):
-    """
-    This algorithm is similar to the local beam algorithm but has a bias
+    """This algorithm is similar to the local beam algorithm but has a bias
     towards selecting a fitter successor rather than selecting one randomly. 
     This algorithm iteratively take k possible state and selects a
     successor to each state with a bias towards the better states. If this
@@ -310,16 +243,8 @@ class StochasticBeam(SuccessorAlgorithm):
         SuccessorAlgorithm.__init__(self, k, board_size, queens, p)
         
     def selectSuccessor(self, successors):
-        """
-        Selects a successor from the list of successors with a bias towards
-        fitter successors
-        
-        Arguments:
-            successors {list of lists of integers} -- list of successor states
-        
-        Returns:
-            List of integers -- a selected state.
-        """
+        # Selects a successor from the list of successors with a bias towards
+        # fitter successors
         
         # Rank successors by their fitness (lower rank = better fitness)
         # Get tuple (state, rank) sorted ascending by their rank
@@ -336,8 +261,7 @@ class StochasticBeam(SuccessorAlgorithm):
         return states
     
     def start(self):
-        """
-        Starts the algorithm. Finds a goal state (where no queen can attack 
+        """Starts the algorithm. Finds a goal state (where no queen can attack 
         another queen) using a simulated annealing algorithm.
     
         Returns:
@@ -350,8 +274,7 @@ class StochasticBeam(SuccessorAlgorithm):
 
 
 class Genetic(Solver):
-    """
-    This algorithm takes an initial population of n number of states, 
+    """This algorithm takes an initial population of n number of states, 
     measures their fitness, orders them. The algorithm then crosses over 
     pairs of states excluding the worst performing state in the population
     to create new states. The values in these states then are mutated 
@@ -369,42 +292,23 @@ class Genetic(Solver):
         self.mutation_chance = mutation_chance
         
         print(f"Population size: {population}")
-        print(f"Crossing split: {int(self.state_split * 100)}/{int((1 - self.state_split) * 100)}")
+        print(f"Crossing split: {int(self.state_split*100)}/{int((1-self.state_split) * 100)}")
         print(f"Chance of mutation: {self.mutation_chance}")
     
     def merge(self, state1, state2):
-        """
-        Merges first half of state 1 and second half of state 2 to create a 
-        new state. The size of a "half" is determined by state_split.
-        
-        Arguments:
-            state1 {list of integers} -- state to merge - take first half.
-            state2 {list of integers} -- state to merge - take second half.
-            
-        Returns:
-            List of integers -- a new state created by merging state1 and state2.
-        """
+        # Merges first half of state 1 and second half of state 2 to create a 
+        # new state. The size of a "half" is determined by state_split.
         
         first_half_size = round(len(state1) * self.state_split)
         new_state = state1[:first_half_size] + state2[first_half_size:]
         return new_state
     
     def crossover(self, states):
-        """
-        Loops through pairs of states and merge them to create two new states.
-        Excludes the last state in states from merging.
-        state1 = state1FirstHalf + state2SecondHalf
-        state2 = state2FirstHalf + state1SecondHalf
-        Size of first "half" determined by the state_split class variable.add()
-        
-        Arguments:
-            states {list of lists of integers} -- list of states ordered by 
-            fitness to be mixed in pairs.
-        
-        Returns:
-            List of lists of integers -- list of new states created by merging 
-            pairs of states.
-        """
+        # Loops through pairs of states and merge them to create two new states.
+        # Excludes the last state in states from merging.
+        # state1 = state1FirstHalf + state2SecondHalf
+        # state2 = state2FirstHalf + state1SecondHalf
+        # Size of first "half" determined by the state_split class variable.add()
         
         for i in range(0, self.population, 2):
             if i+2 != len(states):  # If not at last two states
@@ -414,53 +318,31 @@ class Genetic(Solver):
                 states[i] = self.merge(state1, state2)
                 states[i+1] = self.merge(state2, state1)
             else:
-                # If at last two states
+                # When reach at last two states
                 # Take previous state instead of next one
-                # Removes the worst performing state from the poplation
+                # This removes the worst performing state from the poplation
                 state1 = states[i-1][:]
                 state2 = states[i][:]
                 states[i] = self.merge(state1, state2)
                 states[i+1] = self.merge(state2, state1)
         return states
     
-    def fitness(self, states):
-        """
-        Sorts a list of states each by their own fitness.
-        
-        Arguments:
-            states {list of lists of integers} -- list of states to sort.
-        
-        Returns:
-            List of lists of integers -- list of states sorted by their fitness
-            from best to worst.
-        """
+    def fitnessSort(self, states):
+        # Sorts a list of states each by their own fitness.
+
+        # Get ranking tuples (state, rank) sorted ascending by rank
         ranking = self.rank(states)
         return [x[0] for x in ranking]  # Return states in sorted order
             
     def mutate(self, state):
-        """Attempts to mutate each value in the state at the mutation_chance 
-        class variable."""
+        # Attempts to mutate each value in the state at the mutation_chance 
+        # class variable.
         
         for idx in range(len(state)):
             rand = random.random()
             if rand < self.mutation_chance:
                 # Generate new random value at this index
                 state[idx] = random.randint(0, self.board_size - 1)
-    
-    def mutateStates(self, states):
-        """
-        Calls the mutate function on each state in the given list of states.
-        
-        Arguments:
-            states {list of lists of integers} -- list of states to be mutated.
-        
-        Returns:
-            List of lists of integers -- list of mutated states.
-        """
-        
-        for state in states:
-            self.mutate(state)
-        return states
             
     def start(self):
         """
@@ -479,18 +361,20 @@ class Genetic(Solver):
         # Loop while not found solution
         while (found := self.checkFound(states))['Found'] == False:
             if self.checkValidStates(states):
-                states = self.fitness(states)  # Sort states by fitness
+                states = self.fitnessSort(states)  # Sort states by fitness
                 states = self.crossover(states)  # Swap state halves
-                states = self.mutateStates(states)  # Mutate handful of state values
+                for state in states:
+                    self.mutate(states)  # Mutate handful of state values
             
         goal_state = states[found['Idx']]
         return goal_state
 
 
 class Display:
+    """Class to hold functions to display representations of states."""
+    
     def printBoard(self, state):
-        """
-        Prints a representation of the state as a board to command line.
+        """Prints a representation of the state as a board to command line.
         
         Arguments:
             state {list of integers} -- the state to be printed.
@@ -531,5 +415,4 @@ if __name__ == "__main__":
     print("Genetic Algorithm")
     g = Genetic()
     runAlgorithm(g)
-    
     
